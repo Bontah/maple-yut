@@ -9,28 +9,9 @@ import type { Piece, Team } from '../game/types.js'
 import type { YutPiece } from '../entities/YutPiece.js'
 import type { YutState } from '../entities/YutState.js'
 import { type ForcedThrow, useYutGame } from '../hooks/useYutGame.js'
+import { STATION_POS } from './board/stationPositions.js'
 
-// 6×6 logical grid mapped onto a 600×600 SVG canvas.
-const PADDING = 50
-const CELL = 100  // grid cell size in pixels
 const STATION_R = 18
-
-const STATION_POS: Record<number, [number, number]> = {
-	0: gp(0, 5),
-	1: gp(1, 5), 2: gp(2, 5), 3: gp(3, 5), 4: gp(4, 5),
-	5: gp(5, 5),
-	6: gp(5, 4), 7: gp(5, 3), 8: gp(5, 2), 9: gp(5, 1),
-	10: gp(5, 0),
-	11: gp(4, 0), 12: gp(3, 0), 13: gp(2, 0), 14: gp(1, 0),
-	15: gp(0, 0),
-	16: gp(0, 1), 17: gp(0, 2), 18: gp(0, 3), 19: gp(0, 4),
-	20: gp(4, 1), 21: gp(3, 2), 22: gp(2.5, 2.5), 23: gp(2, 3), 24: gp(1, 4),
-	25: gp(4, 4), 26: gp(3, 3), 27: gp(2, 2), 28: gp(1, 1)
-}
-
-function gp(col: number, row: number): [number, number] {
-	return [PADDING + col * CELL, PADDING + row * CELL]
-}
 
 const SHORTCUTS: [number, number][] = [
 	[10, 20], [20, 21], [21, 22], [22, 23], [23, 24], [24, 0],
@@ -130,7 +111,7 @@ export function Board() {
 			<svg className="board-svg" viewBox="0 0 600 600" role="img" aria-label="Yut Nori board">
 				<rect x="0" y="0" width="600" height="600" rx="12" fill="#f4ecda" />
 				<polygon
-					points={[[0, 5], [5, 5], [5, 0], [0, 0]].map(([c, r]) => `${PADDING + c * CELL},${PADDING + r * CELL}`).join(' ')}
+					points={[[0, 5], [5, 5], [5, 0], [0, 0]].map(([c, r]) => `${50 + c * 100},${50 + r * 100}`).join(' ')}
 					stroke="#9d6f3a" strokeWidth="2" fill="none"
 				/>
 				{SHORTCUTS.map(([a, b], i) => {
