@@ -59,15 +59,27 @@ describe('enumerateForward', () => {
 		expect(opts[0].endStation).toBe(HOME)
 	})
 
-	it('crossing two intersections branches into 4 paths', () => {
-		// From station 4 (just before SE corner), step 6 — passes 5 and reaches 10 (or branches)
-		// Path 1: 4 → 5 → 6 → 7 → 8 → 9 → 10 (then choice at 10 doesn't apply because we LAND there)
-		// Path 2: 4 → 5 → 25 → 26 → 22 → 23 → 24 (also stops at 24 — only landed on intersections 5 and 22 mid-trip)
-		// At station 5, choice; at station 22, choice (when we reach it). So branches happen.
+	it('crossing intersections without starting on one stays on the perimeter', () => {
+		// From station 4 with step 6: passes through 5 (a shortcut intersection) but does NOT branch.
+		// Path is uniquely 4 → 5 → 6 → 7 → 8 → 9 → 10.
 		const opts = enumerateForward(piece([4]), 6)
-		expect(opts.length).toBeGreaterThanOrEqual(2)
-		const ends = new Set(opts.map((o) => o.endStation))
-		expect(ends.has(10)).toBe(true)
+		expect(opts).toHaveLength(1)
+		expect(opts[0].endStation).toBe(10)
+		expect(opts[0].endPath).toEqual([4, 5, 6, 7, 8, 9, 10])
+	})
+
+	it('passing through corner 5 (e.g. step 2 from station 4) does NOT branch — must START at the corner to take a shortcut', () => {
+		const opts = enumerateForward(piece([4]), 2)
+		expect(opts).toHaveLength(1)
+		expect(opts[0].endStation).toBe(6)
+		expect(opts[0].endPath).toEqual([4, 5, 6])
+	})
+
+	it('passing through center 22 (e.g. step 2 from station 21) does NOT branch — must START at the center to choose exit', () => {
+		const opts = enumerateForward(piece([21]), 2)
+		expect(opts).toHaveLength(1)
+		expect(opts[0].endStation).toBe(23)
+		expect(opts[0].endPath).toEqual([21, 22, 23])
 	})
 })
 

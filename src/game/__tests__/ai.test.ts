@@ -126,7 +126,10 @@ describe('AI smoke matches', () => {
 		expect(wins / N).toBeGreaterThanOrEqual(0.65)
 	}, 60_000)
 
-	it('hard vs random: hard wins ≥ 80% (validates leaf eval is strong vs no strategy)', () => {
+	it('hard vs random: hard wins ≥ 75% (validates leaf eval is strong vs no strategy)', () => {
+		// Threshold lowered from 0.80 → 0.75 after the Maple Story shortcut rule change:
+		// pieces can no longer branch at intersections mid-move, reducing the AI's search-space
+		// advantage slightly. 0.79 is the new deterministic result; 0.75 keeps a healthy margin.
 		const rng = createRandom(0xA3)
 		let wins = 0
 		for (let i = 0; i < N; i++) {
@@ -138,7 +141,7 @@ describe('AI smoke matches', () => {
 			)
 			if ((stats.winner === 'A') === onA) wins++
 		}
-		expect(wins / N).toBeGreaterThanOrEqual(0.8)
+		expect(wins / N).toBeGreaterThanOrEqual(0.75)
 	}, 60_000)
 })
 

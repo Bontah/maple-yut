@@ -87,7 +87,11 @@ export function enumerateForward(piece: Piece, steps: number): MoveOption[] {
 		}
 		const edges = FORWARD[station]
 		if (!edges) return
-		const nexts = edges.alt !== undefined ? [edges.next, edges.alt] : [edges.next]
+		// Maple Story rule: a piece can only take a shortcut (alt edge) if it STARTS its
+		// move at the intersection. Passing through 5, 10, or 22 mid-move follows the
+		// default next edge — no branching.
+		const isFirstStep = station === startStation
+		const nexts = (isFirstStep && edges.alt !== undefined) ? [edges.next, edges.alt] : [edges.next]
 		for (const n of nexts) {
 			dfs(n, remaining - 1, [...suffix, n])
 		}
