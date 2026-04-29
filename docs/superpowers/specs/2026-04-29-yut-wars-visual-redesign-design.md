@@ -171,8 +171,9 @@ src/
       board.css                        (NEW)
       panel.css                        (NEW)
       sticks.css                       (NEW)
-  game/
-    board.ts                           (CHANGED — STATION_POS coordinates only)
+  components/
+    board/
+      stationPositions.ts              (NEW — extracted from Board.tsx; pure data + helper, testable in vitest)
   assets/
     mascots/
       team-a.png                       (NEW — slime)
@@ -199,7 +200,7 @@ Unchanged. All components read from the existing `useYutGame()` hook. No new con
 
 ## Station spacing fix
 
-`Board.tsx:20-28` places diagonal stations at integer cells while the center is at (2.5, 2.5), producing two half-length segments adjacent to the center. **Fix:** space all six segments per diagonal evenly.
+`STATION_POS` in `src/components/Board.tsx:18-29` places diagonal stations at integer cells while the center is at (2.5, 2.5), producing two half-length segments adjacent to the center. **Fix:** extract `STATION_POS` to `src/components/board/stationPositions.ts` (pure data + a `gp(col, row)` helper), correct the diagonal coordinates so all six segments per diagonal are equal length, and unit-test the result with vitest.
 
 ```ts
 // Before
@@ -214,7 +215,7 @@ Unchanged. All components read from the existing `useYutGame()` hook. No new con
 27: gp(10/6, 10/6),   28: gp(5/6, 5/6)
 ```
 
-`STATION_POS` is the only consumer of these coordinates. `SHORTCUTS`, `board.ts`, and the move/path logic do not reference them. Zero rules-engine impact.
+`STATION_POS` is the only consumer of these coordinates. `SHORTCUTS` (in `Board.tsx`), `src/game/board.ts`, and the move/path logic do not reference them — they all work in station IDs (0..28). Zero rules-engine impact.
 
 ## Animation & interaction
 
