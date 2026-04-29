@@ -99,8 +99,15 @@ function useYutGameSetup(): YutGameContextValue {
 			const avatarUri = getUserAvatarUrl({ guildMember, user: session.user })
 			const name = getUserDisplayName({ guildMember, user: session.user })
 
+			// In a real Discord Activity, each voice channel gets its own room (filterBy
+			// channelId in core/server.ts). In local browser-tab dev, the mock SDK gives
+			// each tab a different channelId from sessionStorage — which would put two
+			// tabs in two different rooms, making local hot-seat testing impossible.
+			// Force a stable channelId outside Discord so two tabs share one room.
+			const channelId = isEmbedded ? (discordSdk.channelId ?? 'local') : 'dev-local'
+
 			const newRoom = await client.joinOrCreate<YutState>(GameName, {
-				channelId: discordSdk.channelId ?? 'local',
+				channelId,
 				roomName,
 				userId: session.user.id,
 				name,

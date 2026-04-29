@@ -2,7 +2,7 @@
 // Renders the live YutState; lets the current player throw, pick a piece + destination,
 // and use the two Maple psychic powers (Control Yut / Control Horses).
 
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import type { MoveOption } from '../game/board.js'
 import { legalBackMoves, legalForwardMoves, type GameState } from '../game/rules.js'
 import type { Piece, Team } from '../game/types.js'
@@ -77,31 +77,24 @@ export function Board() {
 
 	const isMyTurn = myPlayer.team === state.currentTeam && myPlayer.team !== ''
 
-	const gameView = useMemo(() => stateToGame(state), [state])
-	const forwardMoves = useMemo(() => {
-		if (state.phase !== 'await_spend' || state.pendingStep <= 0) return []
-		return legalForwardMoves(gameView, state.pendingStep)
-	}, [gameView, state.phase, state.pendingStep])
-	const backMoves = useMemo(() => {
-		if (state.phase !== 'await_spend' || state.pendingStep >= 0) return []
-		return legalBackMoves(gameView)
-	}, [gameView, state.phase, state.pendingStep])
-
-	const myMovablePieceIds = useMemo(() => {
-		const ids = new Set<string>()
-		for (const m of forwardMoves) ids.add(m.pieceId)
-		for (const m of backMoves) ids.add(m.pieceId)
-		return ids
-	}, [forwardMoves, backMoves])
-
-	const optionsForSelected: MoveOption[] = useMemo(() => {
-		if (!selectedPieceId) return []
-		if (state.phase !== 'await_spend') return []
-		if (state.pendingStep > 0) {
-			return forwardMoves.filter((m) => m.pieceId === selectedPieceId).map((m) => m.option)
-		}
-		return []
-	}, [selectedPieceId, forwardMoves, state.phase, state.pendingStep])
+	// Recompute every render: Colyseus mutates `state` in place, so a useMemo with
+	// `[state]` would never invalidate (the reference is stable) and we'd see stale
+	// gameView/forwardMoves on Tab B once the turn transitions away from the team
+	// that was current when this client first connected. The work is tiny (≤8 pieces,
+	// O(1) per piece), so memoization buys nothing here and risks correctness.
+	const gameView = stateToGame(state)
+	const forwardMoves = (state.phase === 'await_spend' && state.pendingStep > 0)
+		? legalForwardMoves(gameView, state.pendingStep)
+		: []
+	const backMoves = (state.phase === 'await_spend' && state.pendingStep < 0)
+		? legalBackMoves(gameView)
+		: []
+	const myMovablePieceIds = new Set<string>()
+	for (const m of forwardMoves) myMovablePieceIds.add(m.pieceId)
+	for (const m of backMoves) myMovablePieceIds.add(m.pieceId)
+	const optionsForSelected: MoveOption[] = (selectedPieceId && state.phase === 'await_spend' && state.pendingStep > 0)
+		? forwardMoves.filter((m) => m.pieceId === selectedPieceId).map((m) => m.option)
+		: []
 
 	function onPieceClick(piece: YutPiece) {
 		if (!isMyTurn || state!.phase !== 'await_spend') return
@@ -163,6 +156,39 @@ export function Board() {
 						</g>
 					)
 				})}
+				{pieces.map((p) => {
+					if (p.isHome) return null
+					const [x, y] = STATION_POS[p.station] ?? [0, 0]
+					const offsetIdx = pieceStackIndex(pieces, p)
+					// Teams fan out to opposite sides so they don't overlap at shared stations
+					// (especially the start station, where all 8 pieces begin).
+					const teamSide = p.team === 'A' ? -1 : 1
+					const dx = teamSide * (10 + Math.floor(offsetIdx / 2) * 6)
+					const dy = -Math.floor(offsetIdx / 2) * 6 + (offsetIdx % 2 === 0 ? 0 : -10)
+					const movable = myMovablePieceIds.has(p.pieceId) && p.team === myPlayer.team && isMyTurn
+					const selected = selectedPieceId === p.pieceId
+					return (
+						<g
+							key={p.pieceId}
+							className="piece"
+							style={{ transform: `translate(${x + dx}px, ${y + dy}px)`, cursor: movable ? 'pointer' : 'default' }}
+							onClick={() => onPieceClick(p)}
+						>
+							<circle
+								r={selected ? 16 : 13}
+								fill={TEAM_COLOR[p.team as Team]}
+								stroke={selected ? '#222' : movable ? '#444' : '#000'}
+								strokeWidth={selected ? 3 : movable ? 2 : 1}
+							/>
+							<text y={4} fontSize="10" textAnchor="middle" fill="#fff" fontWeight="bold">
+								{p.pieceId.slice(1)}
+							</text>
+						</g>
+					)
+				})}
+				{/* Ghost destinations rendered LAST so they sit on top of pieces.
+				    A ghost at a capture target overlays the opponent piece — clicking the
+				    ghost still works because of z-order. */}
 				{optionsForSelected.map((opt, i) => {
 					if (opt.endStation === -1) {
 						const [x, y] = STATION_POS[0]
@@ -186,33 +212,6 @@ export function Board() {
 							onClick={() => onDestinationClick(opt)}
 							style={{ cursor: 'pointer' }}
 						/>
-					)
-				})}
-				{pieces.map((p) => {
-					if (p.isHome) return null
-					const [x, y] = STATION_POS[p.station] ?? [0, 0]
-					const offsetIdx = pieceStackIndex(pieces, p)
-					const dx = (offsetIdx % 2 === 0 ? -1 : 1) * Math.floor(offsetIdx / 2) * 7
-					const dy = -Math.floor(offsetIdx / 2) * 7
-					const movable = myMovablePieceIds.has(p.pieceId) && p.team === myPlayer.team && isMyTurn
-					const selected = selectedPieceId === p.pieceId
-					return (
-						<g
-							key={p.pieceId}
-							className="piece"
-							style={{ transform: `translate(${x + dx}px, ${y + dy}px)`, cursor: movable ? 'pointer' : 'default' }}
-							onClick={() => onPieceClick(p)}
-						>
-							<circle
-								r={selected ? 16 : 13}
-								fill={TEAM_COLOR[p.team as Team]}
-								stroke={selected ? '#222' : movable ? '#444' : '#000'}
-								strokeWidth={selected ? 3 : movable ? 2 : 1}
-							/>
-							<text y={4} fontSize="10" textAnchor="middle" fill="#fff" fontWeight="bold">
-								{p.pieceId.slice(1)}
-							</text>
-						</g>
 					)
 				})}
 			</svg>

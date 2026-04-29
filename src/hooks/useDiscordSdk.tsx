@@ -139,6 +139,16 @@ export async function authenticateSdk(options?: AuthenticateSdkOptions) {
 	const { scope = ['identify', 'guilds'] } = options ?? {}
 
 	await discordSdk.ready()
+
+	// Local browser-tab dev path (DiscordSDKMock): skip the OAuth round-trip entirely.
+	// The mock SDK ignores access_token and returns the mocked session directly, and
+	// hitting /api/token without real Discord credentials would just produce noise.
+	if (!isEmbedded) {
+		const auth = await discordSdk.commands.authenticate({ access_token: 'mock_token' })
+		if (auth == null) throw new Error('Mock authenticate failed')
+		return { accessToken: 'mock_token', auth }
+	}
+
 	const { code } = await discordSdk.commands.authorize({
 		client_id: import.meta.env.VITE_DISCORD_CLIENT_ID,
 		response_type: 'code',

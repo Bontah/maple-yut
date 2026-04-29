@@ -10,6 +10,7 @@
 
 # testing
 /coverage
+/.test-shots
 
 # misc
 .DS_Store
