@@ -63,6 +63,7 @@ export function BoardCanvas({
         })}
         {pieces.map((p) => {
           if (p.isHome) return null
+          if (p.path.length === 0) return null   // stable — rendered in the side-panel strip
           const [x, y] = STATION_POS[p.station] ?? [0, 0]
           const offsetIdx = pieceStackIndex(pieces, p)
           // Teams fan out to opposite sides so they don't overlap at shared stations

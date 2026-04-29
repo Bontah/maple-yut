@@ -150,6 +150,30 @@
   border: 1px solid var(--wood-rim);
 }
 
+/* Movable strip slots — clickable, bright */
+.piece-slot--movable {
+  cursor: pointer;
+  border-color: var(--gold);
+  box-shadow: 0 0 8px rgba(244, 200, 58, 0.4);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.piece-slot--movable.piece-slot--start {
+  /* Override the default dashed/dimmed start look when this stable piece is movable */
+  opacity: 1;
+  border-style: solid;
+  background: var(--wood-dark);
+}
+.piece-slot--movable:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 14px rgba(244, 200, 58, 0.7);
+}
+
+.piece-slot--selected {
+  outline: 3px solid var(--gold);
+  outline-offset: 2px;
+  transform: scale(1.05);
+}
+
 .pieces-strip__label {
   font-size: 10px;
   color: var(--frame);

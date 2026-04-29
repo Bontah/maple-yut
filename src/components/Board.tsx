@@ -30,6 +30,8 @@ export function Board() {
   const myTeam = (myPlayer.team || '') as Team | ''
   const isMyTurn = myTeam !== '' && myTeam === state.currentTeam
 
+  const piecesArr = Array.from(pieces)
+
   // Recompute every render: Colyseus mutates `state` in place, so a useMemo
   // would stale.
   const gameView = stateToGame(state)
@@ -58,6 +60,11 @@ export function Board() {
     }
   }
 
+  function handleStripClick(pieceId: string) {
+    const piece = piecesArr.find((p) => p.pieceId === pieceId)
+    if (piece) handlePieceClick(piece)
+  }
+
   function handleDestinationClick(opt: MoveOption) {
     if (!selectedPieceId) return
     const all = forwardMoves.filter((m) => m.pieceId === selectedPieceId).map((m) => m.option)
@@ -72,7 +79,6 @@ export function Board() {
   const opponentTeam: Team = selfTeam === 'A' ? 'B' : 'A' // the other side
   const opponentPlayer = players.find((p) => p.team === opponentTeam)
   const selfPlayer     = players.find((p) => p.team === selfTeam)
-  const piecesArr = Array.from(pieces)
   const homeA = piecesArr.filter((p) => p.team === 'A' && p.isHome).length
   const homeB = piecesArr.filter((p) => p.team === 'B' && p.isHome).length
 
@@ -123,6 +129,9 @@ export function Board() {
             isActive={selfActive}
             myTeam={myTeam}
             powersRemaining={myPowersLeft}
+            movablePieceIds={myMovablePieceIds}
+            selectedPieceId={selectedPieceId}
+            onSlotClick={handleStripClick}
             onYut={game.usePowerYut}
             onHorses={game.usePowerHorses}
           >
