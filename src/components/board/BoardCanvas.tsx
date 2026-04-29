@@ -61,37 +61,60 @@ export function BoardCanvas({
             </g>
           )
         })}
-        {pieces.map((p) => {
-          if (p.isHome) return null
-          if (p.path.length === 0) return null   // stable — rendered in the side-panel strip
-          const [x, y] = STATION_POS[p.station] ?? [0, 0]
-          const offsetIdx = pieceStackIndex(pieces, p)
-          // Teams fan out to opposite sides so they don't overlap at shared stations
-          // (especially the start station, where all 8 pieces begin).
-          const teamSide = p.team === 'A' ? -1 : 1
-          const dx = teamSide * (10 + Math.floor(offsetIdx / 2) * 6)
-          const dy = -Math.floor(offsetIdx / 2) * 6 + (offsetIdx % 2 === 0 ? 0 : -10)
-          const movable = myMovablePieceIds.has(p.pieceId) && p.team === myTeam && isMyTurn
-          const selected = selectedPieceId === p.pieceId
-          const rimColor = selected || movable ? 'var(--gold)' : TEAM_COLOR[p.team as Team]
-          const rimWidth = selected ? 4 : movable ? 3 : 2
-          const radius = selected ? 18 : 14
-          return (
-            <g
-              key={p.pieceId}
-              className="piece"
-              style={{ transform: `translate(${x + dx}px, ${y + dy}px)`, cursor: movable ? 'pointer' : 'default' }}
-              onClick={() => onPieceClick(p)}
-            >
-              <circle r={radius} fill="var(--wood-dark)" stroke={rimColor} strokeWidth={rimWidth} />
-              <image
-                href={MASCOT_BY_TEAM[p.team as Team]}
-                x={-radius} y={-radius}
-                width={radius * 2} height={radius * 2}
-              />
-            </g>
-          )
-        })}
+        {(() => {
+          // Group on-board pieces by (team, station). Stable (path=[]) and home pieces don't render here.
+          const stacks = new Map<string, YutPiece[]>()
+          for (const p of pieces) {
+            if (p.isHome) continue
+            if (p.path.length === 0) continue
+            const key = `${p.team}@${p.station}`
+            const arr = stacks.get(key)
+            if (arr) arr.push(p)
+            else stacks.set(key, [p])
+          }
+          // Sort each stack by pieceId for deterministic representative selection.
+          const stackEntries: { key: string; stack: YutPiece[] }[] = []
+          for (const [key, stack] of stacks) {
+            stack.sort((a, b) => a.pieceId.localeCompare(b.pieceId))
+            stackEntries.push({ key, stack })
+          }
+          return stackEntries.map(({ key, stack }) => {
+            const representative = stack[0]
+            const station = representative.station
+            const team = representative.team as Team
+            const [x, y] = STATION_POS[station] ?? [0, 0]
+            // Match the station's display radius so the piece fills the circle.
+            const isCorner = station === 0 || station === 5 || station === 10 || station === 15
+            const isCenter = station === 22
+            const stationR = isCenter ? STATION_R + 6 : isCorner ? STATION_R + 3 : STATION_R
+            // Selection / movability: any piece in the stack qualifies (rules-side they move together).
+            const selected = stack.some((p) => selectedPieceId === p.pieceId)
+            const movable = stack.some((p) => myMovablePieceIds.has(p.pieceId)) && team === myTeam && isMyTurn
+            const rimColor = selected || movable ? 'var(--gold)' : TEAM_COLOR[team]
+            const rimWidth = selected ? 4 : movable ? 3 : 2
+            return (
+              <g
+                key={key}
+                className="piece"
+                style={{ transform: `translate(${x}px, ${y}px)`, cursor: movable ? 'pointer' : 'default' }}
+                onClick={() => onPieceClick(representative)}
+              >
+                <circle r={stationR} fill="var(--wood-dark)" stroke={rimColor} strokeWidth={rimWidth} />
+                <image
+                  href={MASCOT_BY_TEAM[team]}
+                  x={-stationR} y={-stationR}
+                  width={stationR * 2} height={stationR * 2}
+                />
+                {stack.length > 1 && (
+                  <g transform={`translate(${stationR - 6}, ${-stationR + 6})`}>
+                    <circle r={10} fill="var(--gold)" stroke="var(--wood-rim)" strokeWidth={1.5} />
+                    <text fontSize="11" fontWeight="800" textAnchor="middle" y={4} fill="var(--wood-dark)" fontFamily="var(--font-body)">×{stack.length}</text>
+                  </g>
+                )}
+              </g>
+            )
+          })
+        })()}
         {/* Ghost destinations rendered LAST so they sit on top of pieces. */}
         {optionsForSelected.map((opt, i) => {
           if (opt.endStation === -1) {
@@ -120,11 +143,4 @@ export function BoardCanvas({
       </svg>
     </div>
   )
-}
-
-function pieceStackIndex(all: YutPiece[], p: YutPiece): number {
-  if (p.station === -1) return 0
-  const stackmates = all.filter((q) => q.team === p.team && !q.isHome && q.station === p.station)
-  stackmates.sort((a, b) => a.pieceId.localeCompare(b.pieceId))
-  return stackmates.findIndex((q) => q.pieceId === p.pieceId)
 }
