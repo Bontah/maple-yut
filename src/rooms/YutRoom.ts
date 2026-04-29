@@ -270,6 +270,7 @@ export class YutRoom extends Room<YutState> {
 		this.pendingWasBonusThrow = wasBonusThrow
 		this.state.phase = 'await_spend'
 		this.state.syncFromGame(this.game)
+		this.maybeAdvanceBot()
 	}
 
 	// ---------- core engine ----------
@@ -310,6 +311,7 @@ export class YutRoom extends Room<YutState> {
 		this.pendingWasBonusThrow = wasBonusThrow
 		this.state.phase = 'await_spend'
 		this.state.syncFromGame(this.game)
+		this.maybeAdvanceBot()
 	}
 
 	private pendingWasBonusThrow = false

@@ -346,6 +346,83 @@ describe('YutRoom — rematch', () => {
 	}, 30_000)
 })
 
+describe('YutRoom — bot integration', () => {
+	it('bot does not stall in await_spend after throwing a legal result', async () => {
+		// Seed 42 is deterministic; the bot's first throw with this seed produces a
+		// legal result (not wasted), which is the path that had the bug.
+		const room = await colyseus.createRoom('yut', {
+			roomName: 'bot-test',
+			channelId: 'bot-test-channel',
+			seed: 42
+		})
+
+		const human = await colyseus.connectTo(room, {
+			userId: 'u1', name: 'Human', avatarUri: ''
+		})
+		await room.waitForNextPatch()
+
+		human.send('join_team', { team: 'A' })
+		await room.waitForNextPatch()
+
+		human.send('add_bot', { team: 'B', difficulty: 'easy' })
+		await room.waitForNextPatch()
+
+		// Confirm the bot is seated.
+		const players = Array.from((human.state as YutState).players.values())
+		expect(players.some((p) => p.team === 'B' && p.isBot)).toBe(true)
+
+		human.send('start', {})
+		await room.waitForNextPatch()
+		expect((human.state as YutState).phase).toBe('await_throw')
+		expect((human.state as YutState).currentTeam).toBe('A')
+
+		// Drive the human's turn until it ends (or the match ends).
+		// Fixed seed = 42 makes throws deterministic; we still loop because of bonus throws.
+		let safety = 30
+		while (
+			(human.state as YutState).currentTeam === 'A' &&
+			(human.state as YutState).phase !== 'ended' &&
+			safety-- > 0
+		) {
+			const phase = (human.state as YutState).phase
+			if (phase === 'await_throw') {
+				human.send('throw', {})
+				await room.waitForNextPatch()
+			} else if (phase === 'await_spend') {
+				const view = gameStateFromSchema(human.state as YutState)
+				const step = view.pendingStep!
+				if (step > 0) {
+					const moves = legalForwardMoves(view, step)
+					if (moves.length === 0) break
+					human.send('spend', { kind: 'forward', pieceId: moves[0].pieceId, optionIndex: 0 })
+				} else if (step < 0) {
+					const backs = legalBackMoves(view)
+					if (backs.length === 0) break
+					human.send('spend', { kind: 'back', pieceId: backs[0].pieceId })
+				} else break
+				await room.waitForNextPatch()
+			} else break
+		}
+
+		// It should now be the bot's turn (Team B), in await_throw.
+		expect((human.state as YutState).currentTeam).toBe('B')
+		expect((human.state as YutState).phase).toBe('await_throw')
+
+		// The bot has a 700ms think delay (BOT_THINK_DELAY_MS in YutRoom.ts).
+		// After throwing a legal result, the bug stalls the bot in await_spend
+		// because doThrow's success path forgot to call maybeAdvanceBot.
+		// Wait long enough for: throw delay (700ms) + spend delay (700ms) + slack.
+		await sleep(2500)
+
+		// Bug manifests as: phase === 'await_spend' AND currentTeam === 'B'.
+		// After fix: bot completes its turn — either it's back to A, or the bot
+		// had a bonus throw and is in await_throw, or the match ended.
+		const finalState = human.state as YutState
+		const stalled = finalState.phase === 'await_spend' && finalState.currentTeam === 'B'
+		expect(stalled).toBe(false)
+	}, 10_000)
+})
+
 describe('YutRoom — lobby behavior', () => {
 	it('rejects joining a taken seat', async () => {
 		const room = await colyseus.createRoom('yut', {
