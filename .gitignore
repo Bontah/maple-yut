@@ -38,3 +38,7 @@ yarn-error.log*
 
 # build output
 dist/
+
+# scratch images at repo root (mascot drops, screenshots used for reference)
+/player_*.png
+/img*.png
