@@ -114,3 +114,28 @@
   0%   { transform: translate3d(0, -10px, 0) rotate(0); opacity: 1; }
   100% { transform: translate3d(20px, 110vh, 0) rotate(720deg); opacity: 0; }
 }
+
+/* Responsive layout */
+
+.board-screen__grid {
+  display: grid;
+  gap: 10px;
+}
+
+@media (min-width: 901px) {
+  .board-screen__grid {
+    grid-template-columns: 1fr 1.5fr 1fr;
+    align-items: start;
+  }
+}
+@media (max-width: 900px) {
+  .board-screen__grid {
+    grid-template-columns: 1fr;
+  }
+  /* On narrow viewports, the right (your) panel goes BELOW the board.
+     The left (opponent) panel goes ABOVE. */
+  .board-screen__opponent { order: 0; }
+  .board-screen__board    { order: 1; }
+  .board-screen__sticks   { order: 2; }
+  .board-screen__self     { order: 3; }
+}

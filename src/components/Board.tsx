@@ -1,391 +1,166 @@
-// SVG-based Yut Nori board with placeholder art (rectangles + circles + text).
-// Renders the live YutState; lets the current player throw, pick a piece + destination,
-// and use the two Maple psychic powers (Control Yut / Control Horses).
+// Orchestration component for the in-game board screen.
+// Composes child components from src/components/board/ and routes events to
+// the existing useYutGame() hook. No game logic lives here.
 
 import { useState } from 'react'
-import type { MoveOption } from '../game/board.js'
+import { BoardCanvas } from './board/BoardCanvas.js'
+import { EndOverlay } from './board/EndOverlay.js'
+import { PlayerPanel } from './board/PlayerPanel.js'
+import { SticksTray } from './board/SticksTray.js'
+import { ThrowButton } from './board/ThrowButton.js'
+import { TurnBanner } from './board/TurnBanner.js'
 import { legalBackMoves, legalForwardMoves, type GameState } from '../game/rules.js'
+import type { MoveOption } from '../game/board.js'
 import type { Piece, Team } from '../game/types.js'
 import type { YutPiece } from '../entities/YutPiece.js'
 import type { YutState } from '../entities/YutState.js'
-import { type ForcedThrow, useYutGame } from '../hooks/useYutGame.js'
-import { STATION_POS } from './board/stationPositions.js'
-
-const STATION_R = 18
-
-const SHORTCUTS: [number, number][] = [
-	[10, 20], [20, 21], [21, 22], [22, 23], [23, 24], [24, 0],
-	[5, 25], [25, 26], [26, 22], [22, 27], [27, 28], [28, 15]
-]
-
-const TEAM_COLOR: Record<Team, string> = { A: '#e15050', B: '#4a76d6' }
-
-const STICK_RESULT_LABEL: Record<string, string> = {
-	BACK_DO: '빽도 (Back-do, −1)',
-	DO: '도 (Do, +1)',
-	GAE: '개 (Gae, +2)',
-	GEOL: '걸 (Geol, +3)',
-	YUT: '윷 (Yut, +4)  +bonus',
-	MO: '모 (Mo, +5)  +bonus'
-}
-
-// Map a result name → a 4-stick flat pattern. Index 0 is the back-marked stick.
-const STICK_PATTERN: Record<string, boolean[]> = {
-	BACK_DO: [true, false, false, false],
-	DO: [false, true, false, false],
-	GAE: [true, true, false, false],
-	GEOL: [true, true, true, false],
-	YUT: [true, true, true, true],
-	MO: [false, false, false, false]
-}
-
-const FORCED_OPTIONS: { result: ForcedThrow; label: string }[] = [
-	{ result: 'DO', label: '도 (+1)' },
-	{ result: 'GAE', label: '개 (+2)' },
-	{ result: 'GEOL', label: '걸 (+3)' },
-	{ result: 'YUT', label: '윷 (+4)' },
-	{ result: 'MO', label: '모 (+5)' }
-]
+import { useYutGame } from '../hooks/useYutGame.js'
+import './board/styles/board.css'
+import './board/styles/panel.css'
+import './board/styles/sticks.css'
 
 export function Board() {
-	const game = useYutGame()
-	const { state, myPlayer, pieces } = game
-	const [selectedPieceId, setSelectedPieceId] = useState<string | null>(null)
-	const [showYutPicker, setShowYutPicker] = useState(false)
-	const [showHorsesPicker, setShowHorsesPicker] = useState(false)
+  const game = useYutGame()
+  const { state, myPlayer, players, pieces } = game
+  const [selectedPieceId, setSelectedPieceId] = useState<string | null>(null)
 
-	if (!state || !myPlayer) return null
+  if (!state || !myPlayer) return null
 
-	const isMyTurn = myPlayer.team === state.currentTeam && myPlayer.team !== ''
+  const myTeam = (myPlayer.team || '') as Team | ''
+  const isMyTurn = myTeam !== '' && myTeam === state.currentTeam
 
-	// Recompute every render: Colyseus mutates `state` in place, so a useMemo with
-	// `[state]` would never invalidate (the reference is stable) and we'd see stale
-	// gameView/forwardMoves on Tab B once the turn transitions away from the team
-	// that was current when this client first connected. The work is tiny (≤8 pieces,
-	// O(1) per piece), so memoization buys nothing here and risks correctness.
-	const gameView = stateToGame(state)
-	const forwardMoves = (state.phase === 'await_spend' && state.pendingStep > 0)
-		? legalForwardMoves(gameView, state.pendingStep)
-		: []
-	const backMoves = (state.phase === 'await_spend' && state.pendingStep < 0)
-		? legalBackMoves(gameView)
-		: []
-	const myMovablePieceIds = new Set<string>()
-	for (const m of forwardMoves) myMovablePieceIds.add(m.pieceId)
-	for (const m of backMoves) myMovablePieceIds.add(m.pieceId)
-	const optionsForSelected: MoveOption[] = (selectedPieceId && state.phase === 'await_spend' && state.pendingStep > 0)
-		? forwardMoves.filter((m) => m.pieceId === selectedPieceId).map((m) => m.option)
-		: []
+  // Recompute every render: Colyseus mutates `state` in place, so a useMemo
+  // would stale.
+  const gameView = stateToGame(state)
+  const forwardMoves = (state.phase === 'await_spend' && state.pendingStep > 0)
+    ? legalForwardMoves(gameView, state.pendingStep) : []
+  const backMoves = (state.phase === 'await_spend' && state.pendingStep < 0)
+    ? legalBackMoves(gameView) : []
+  const myMovablePieceIds = new Set<string>()
+  for (const m of forwardMoves) myMovablePieceIds.add(m.pieceId)
+  for (const m of backMoves) myMovablePieceIds.add(m.pieceId)
+  const optionsForSelected: MoveOption[] = (selectedPieceId && state.phase === 'await_spend' && state.pendingStep > 0)
+    ? forwardMoves.filter((m) => m.pieceId === selectedPieceId).map((m) => m.option) : []
 
-	function onPieceClick(piece: YutPiece) {
-		if (!isMyTurn || state!.phase !== 'await_spend') return
-		if (piece.team !== myPlayer!.team) return
-		if (state!.pendingStep < 0) {
-			if (myMovablePieceIds.has(piece.pieceId)) {
-				game.spendBack(piece.pieceId)
-				setSelectedPieceId(null)
-			}
-			return
-		}
-		if (myMovablePieceIds.has(piece.pieceId)) {
-			setSelectedPieceId((cur) => (cur === piece.pieceId ? null : piece.pieceId))
-		}
-	}
+  function handlePieceClick(piece: YutPiece) {
+    if (!isMyTurn || state!.phase !== 'await_spend') return
+    if (piece.team !== myTeam) return
+    if (state!.pendingStep < 0) {
+      if (myMovablePieceIds.has(piece.pieceId)) {
+        game.spendBack(piece.pieceId)
+        setSelectedPieceId(null)
+      }
+      return
+    }
+    if (myMovablePieceIds.has(piece.pieceId)) {
+      setSelectedPieceId((cur) => (cur === piece.pieceId ? null : piece.pieceId))
+    }
+  }
 
-	function onDestinationClick(opt: MoveOption) {
-		if (!selectedPieceId) return
-		const all = forwardMoves.filter((m) => m.pieceId === selectedPieceId).map((m) => m.option)
-		const idx = all.indexOf(opt)
-		if (idx < 0) return
-		game.spendForward(selectedPieceId, idx)
-		setSelectedPieceId(null)
-	}
+  function handleDestinationClick(opt: MoveOption) {
+    if (!selectedPieceId) return
+    const all = forwardMoves.filter((m) => m.pieceId === selectedPieceId).map((m) => m.option)
+    const idx = all.indexOf(opt)
+    if (idx < 0) return
+    game.spendForward(selectedPieceId, idx)
+    setSelectedPieceId(null)
+  }
 
-	const myPowersLeft = myPlayer.team === 'A' ? state.powersRemainingA : state.powersRemainingB
-	const canUseYut = isMyTurn && state.phase === 'await_throw' && myPowersLeft > 0 && !state.powerUsedThisTurn && state.mode === 'maple'
-	const canUseHorses = isMyTurn && state.phase === 'await_spend' && myPowersLeft > 0 && !state.powerUsedThisTurn && state.mode === 'maple' && state.pendingStep >= 1 && state.pendingStep <= 5
+  // Determine which panel is "yours". Spectators (myTeam = '') default to A on left, B on right.
+  const opponentTeam: Team = myTeam === 'A' ? 'B' : 'A'
+  const selfTeam: Team = myTeam === '' ? 'A' : myTeam
+  const opponentPlayer = players.find((p) => p.team === opponentTeam)
+  const selfPlayer     = players.find((p) => p.team === selfTeam)
+  const piecesArr = Array.from(pieces)
+  const homeA = piecesArr.filter((p) => p.team === 'A' && p.isHome).length
+  const homeB = piecesArr.filter((p) => p.team === 'B' && p.isHome).length
 
-	return (
-		<div className="board-screen">
-			<HeaderBar state={state} myTeam={myPlayer.team} isMyTurn={isMyTurn} />
-			<svg className="board-svg" viewBox="0 0 600 600" role="img" aria-label="Yut Nori board">
-				<rect x="0" y="0" width="600" height="600" rx="12" fill="#f4ecda" />
-				<polygon
-					points={[[0, 5], [5, 5], [5, 0], [0, 0]].map(([c, r]) => `${50 + c * 100},${50 + r * 100}`).join(' ')}
-					stroke="#9d6f3a" strokeWidth="2" fill="none"
-				/>
-				{SHORTCUTS.map(([a, b], i) => {
-					const [x1, y1] = STATION_POS[a]
-					const [x2, y2] = STATION_POS[b]
-					return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#c8a878" strokeWidth="2" />
-				})}
-				{Object.entries(STATION_POS).map(([id, [x, y]]) => {
-					const sid = Number(id)
-					const isCorner = sid === 0 || sid === 5 || sid === 10 || sid === 15
-					const isCenter = sid === 22
-					const isShortcut = sid === 0 || sid === 5 || sid === 10 || sid === 22
-					return (
-						<g key={id}>
-							<circle
-								cx={x} cy={y}
-								r={isCenter ? STATION_R + 6 : isCorner ? STATION_R + 3 : STATION_R}
-								fill={isShortcut ? '#fff7e0' : '#ffffff'}
-								stroke="#9d6f3a" strokeWidth={isShortcut ? 2 : 1}
-							/>
-							{sid === 0 && <text x={x} y={y + 4} fontSize="10" textAnchor="middle">START</text>}
-							{isCenter && <text x={x} y={y + 4} fontSize="10" textAnchor="middle">★</text>}
-						</g>
-					)
-				})}
-				{pieces.map((p) => {
-					if (p.isHome) return null
-					const [x, y] = STATION_POS[p.station] ?? [0, 0]
-					const offsetIdx = pieceStackIndex(pieces, p)
-					// Teams fan out to opposite sides so they don't overlap at shared stations
-					// (especially the start station, where all 8 pieces begin).
-					const teamSide = p.team === 'A' ? -1 : 1
-					const dx = teamSide * (10 + Math.floor(offsetIdx / 2) * 6)
-					const dy = -Math.floor(offsetIdx / 2) * 6 + (offsetIdx % 2 === 0 ? 0 : -10)
-					const movable = myMovablePieceIds.has(p.pieceId) && p.team === myPlayer.team && isMyTurn
-					const selected = selectedPieceId === p.pieceId
-					return (
-						<g
-							key={p.pieceId}
-							className="piece"
-							style={{ transform: `translate(${x + dx}px, ${y + dy}px)`, cursor: movable ? 'pointer' : 'default' }}
-							onClick={() => onPieceClick(p)}
-						>
-							<circle
-								r={selected ? 16 : 13}
-								fill={TEAM_COLOR[p.team as Team]}
-								stroke={selected ? '#222' : movable ? '#444' : '#000'}
-								strokeWidth={selected ? 3 : movable ? 2 : 1}
-							/>
-							<text y={4} fontSize="10" textAnchor="middle" fill="#fff" fontWeight="bold">
-								{p.pieceId.slice(1)}
-							</text>
-						</g>
-					)
-				})}
-				{/* Ghost destinations rendered LAST so they sit on top of pieces.
-				    A ghost at a capture target overlays the opponent piece — clicking the
-				    ghost still works because of z-order. */}
-				{optionsForSelected.map((opt, i) => {
-					if (opt.endStation === -1) {
-						const [x, y] = STATION_POS[0]
-						return (
-							<g key={`ghost-home-${i}`} className="ghost ghost--home" onClick={() => onDestinationClick(opt)}>
-								<circle cx={x - 30} cy={y + 30} r={14} fill="#86c46d" stroke="#4f8a3c" strokeWidth="2" />
-								<text x={x - 30} y={y + 34} fontSize="9" textAnchor="middle" fill="#fff">HOME</text>
-							</g>
-						)
-					}
-					const [x, y] = STATION_POS[opt.endStation]
-					return (
-						<circle
-							key={`ghost-${i}`}
-							className="ghost"
-							cx={x} cy={y} r={STATION_R + 8}
-							fill="rgba(140, 200, 110, 0.35)"
-							stroke="#4f8a3c"
-							strokeDasharray="4 3"
-							strokeWidth="2"
-							onClick={() => onDestinationClick(opt)}
-							style={{ cursor: 'pointer' }}
-						/>
-					)
-				})}
-			</svg>
+  const opponentActive = state.currentTeam === opponentTeam && state.phase !== 'ended'
+  const selfActive     = state.currentTeam === selfTeam     && state.phase !== 'ended'
+  const isSpectator    = myTeam === ''
 
-			<Sticks lastThrowResult={state.lastThrowResult} />
+  const myPowersLeft = myTeam === 'A' ? state.powersRemainingA : myTeam === 'B' ? state.powersRemainingB : 0
+  const opponentPowersLeft = opponentTeam === 'A' ? state.powersRemainingA : state.powersRemainingB
 
-			<div className="board-controls">
-				<button onClick={game.throwSticks} disabled={!(isMyTurn && state.phase === 'await_throw')}>
-					{isMyTurn && state.phase === 'await_throw'
-						? 'Throw sticks'
-						: state.phase === 'await_spend'
-							? 'Pick a piece'
-							: 'Wait…'}
-				</button>
-				{state.lastThrowResult && (
-					<div className="board-result">
-						{STICK_RESULT_LABEL[state.lastThrowResult] ?? state.lastThrowResult}
-						{state.pendingStep !== 0 && state.pendingStep !== STICK_STEP(state.lastThrowResult) && (
-							<span className="board-result__shifted"> → step {state.pendingStep > 0 ? '+' : ''}{state.pendingStep}</span>
-						)}
-					</div>
-				)}
-			</div>
+  const throwEnabled = isMyTurn && state.phase === 'await_throw'
 
-			{state.mode === 'maple' && (
-				<PowersPanel
-					state={state}
-					myTeam={myPlayer.team as Team | ''}
-					canUseYut={canUseYut}
-					canUseHorses={canUseHorses}
-					showYutPicker={showYutPicker}
-					setShowYutPicker={setShowYutPicker}
-					showHorsesPicker={showHorsesPicker}
-					setShowHorsesPicker={setShowHorsesPicker}
-					onYut={(r) => { game.usePowerYut(r); setShowYutPicker(false) }}
-					onHorses={(s) => { game.usePowerHorses(s); setShowHorsesPicker(false) }}
-				/>
-			)}
+  return (
+    <div className="board-screen">
+      <TurnBanner state={state} myTeam={myTeam} />
+      <div className="board-screen__grid">
+        <div className="board-screen__opponent">
+          <PlayerPanel
+            team={opponentTeam}
+            player={opponentPlayer}
+            state={state}
+            pieces={piecesArr}
+            isViewerOwnPanel={false}
+            isActive={opponentActive}
+            myTeam={myTeam}
+            powersRemaining={opponentPowersLeft}
+          />
+        </div>
+        <div className="board-screen__board">
+          <BoardCanvas
+            pieces={piecesArr}
+            myTeam={myTeam}
+            isMyTurn={isMyTurn}
+            myMovablePieceIds={myMovablePieceIds}
+            selectedPieceId={selectedPieceId}
+            optionsForSelected={optionsForSelected}
+            onPieceClick={handlePieceClick}
+            onDestinationClick={handleDestinationClick}
+          />
+        </div>
+        <div className="board-screen__sticks board-screen__self">
+          <PlayerPanel
+            team={selfTeam}
+            player={selfPlayer}
+            state={state}
+            pieces={piecesArr}
+            isViewerOwnPanel={!isSpectator}
+            isActive={selfActive}
+            myTeam={myTeam}
+            powersRemaining={myPowersLeft}
+            onYut={game.usePowerYut}
+            onHorses={game.usePowerHorses}
+          >
+            {!isSpectator && (
+              <>
+                <hr style={{ border: 'none', borderTop: '1px solid var(--wood-rim)', margin: '12px 0 6px' }} />
+                <SticksTray lastThrowResult={state.lastThrowResult} pendingStep={state.pendingStep} />
+                <div style={{ marginTop: 8, display: 'flex', justifyContent: 'center' }}>
+                  <ThrowButton enabled={throwEnabled} onClick={game.throwSticks} />
+                </div>
+              </>
+            )}
+          </PlayerPanel>
+        </div>
+      </div>
 
-			{state.phase === 'ended' && (
-				<EndOverlay
-					winner={state.winner as Team}
-					canRematch={myPlayer.sessionId === state.hostSessionId}
-					onRematch={game.rematch}
-				/>
-			)}
-		</div>
-	)
-}
-
-function STICK_STEP(r: string): number {
-	switch (r) {
-		case 'BACK_DO': return -1
-		case 'DO': return 1
-		case 'GAE': return 2
-		case 'GEOL': return 3
-		case 'YUT': return 4
-		case 'MO': return 5
-		default: return 0
-	}
-}
-
-function HeaderBar({ state, myTeam, isMyTurn }: { state: YutState; myTeam: string; isMyTurn: boolean }) {
-	let banner: string
-	if (state.phase === 'ended') banner = `Match over — Team ${state.winner} wins!`
-	else if (state.phase === 'await_throw') {
-		banner = isMyTurn ? 'Your throw' : `Team ${state.currentTeam}'s throw`
-	}
-	else if (state.phase === 'await_spend') {
-		const dir = state.pendingStep < 0 ? 'back' : `+${state.pendingStep}`
-		banner = isMyTurn ? `Pick a piece (${dir})` : `Team ${state.currentTeam} is picking (${dir})`
-	}
-	else banner = ''
-	return (
-		<div className="board-header">
-			<div className="board-header__banner">{banner}</div>
-			<div className="board-header__teams">
-				<span style={{ color: TEAM_COLOR.A }}>● Team A</span>
-				<span style={{ color: TEAM_COLOR.B }}>● Team B</span>
-				{myTeam && <span className="board-header__me">You: Team {myTeam}</span>}
-			</div>
-		</div>
-	)
-}
-
-function Sticks({ lastThrowResult }: { lastThrowResult: string }) {
-	const pattern = STICK_PATTERN[lastThrowResult] ?? [false, false, false, false]
-	return (
-		<div className="board-sticks-row">
-			{pattern.map((flat, i) => (
-				<div
-					key={`${lastThrowResult}-${i}`}
-					className={`stick stick--${flat ? 'flat' : 'round'}`}
-					title={`Stick ${i + 1}: ${flat ? 'flat side up' : 'round side up'}${i === 0 ? ' (back-marked)' : ''}`}
-				>
-					{i === 0 && flat && <span className="stick__mark">●</span>}
-				</div>
-			))}
-		</div>
-	)
-}
-
-interface PowersPanelProps {
-	state: YutState
-	myTeam: Team | ''
-	canUseYut: boolean
-	canUseHorses: boolean
-	showYutPicker: boolean
-	setShowYutPicker: (b: boolean) => void
-	showHorsesPicker: boolean
-	setShowHorsesPicker: (b: boolean) => void
-	onYut: (r: ForcedThrow) => void
-	onHorses: (s: -1 | 1) => void
-}
-
-function PowersPanel({
-	state, myTeam, canUseYut, canUseHorses,
-	showYutPicker, setShowYutPicker, showHorsesPicker, setShowHorsesPicker,
-	onYut, onHorses
-}: PowersPanelProps) {
-	return (
-		<div className="board-powers">
-			<div className="board-powers__counts">
-				Powers — <span style={{ color: TEAM_COLOR.A }}>A: {state.powersRemainingA}</span>
-				{' / '}
-				<span style={{ color: TEAM_COLOR.B }}>B: {state.powersRemainingB}</span>
-				{state.powerUsedThisTurn && <span className="board-powers__used"> · power used this turn</span>}
-			</div>
-			{myTeam && (
-				<div className="board-powers__buttons">
-					<div>
-						<button onClick={() => setShowYutPicker(!showYutPicker)} disabled={!canUseYut}>
-							Control Yut{showYutPicker ? ' ▾' : ' ▸'}
-						</button>
-						{showYutPicker && canUseYut && (
-							<div className="board-powers__picker">
-								{FORCED_OPTIONS.map((o) => (
-									<button key={o.result} onClick={() => onYut(o.result)}>{o.label}</button>
-								))}
-							</div>
-						)}
-					</div>
-					<div>
-						<button onClick={() => setShowHorsesPicker(!showHorsesPicker)} disabled={!canUseHorses}>
-							Control Horses{showHorsesPicker ? ' ▾' : ' ▸'}
-						</button>
-						{showHorsesPicker && canUseHorses && (
-							<div className="board-powers__picker">
-								<button onClick={() => onHorses(-1)} disabled={state.pendingStep <= 1}>−1 step</button>
-								<button onClick={() => onHorses(1)} disabled={state.pendingStep >= 5}>+1 step</button>
-							</div>
-						)}
-					</div>
-				</div>
-			)}
-		</div>
-	)
-}
-
-function EndOverlay({ winner, canRematch, onRematch }: { winner: Team; canRematch: boolean; onRematch: () => void }) {
-	return (
-		<div className="board-end">
-			<div className="board-end__inner">
-				<h2>Team {winner} wins!</h2>
-				{canRematch ? (
-					<button onClick={onRematch}>Rematch</button>
-				) : (
-					<p style={{ opacity: 0.7 }}>Waiting for host to rematch…</p>
-				)}
-			</div>
-		</div>
-	)
-}
-
-// ---------- helpers ----------
-
-function pieceStackIndex(all: YutPiece[], p: YutPiece): number {
-	if (p.station === -1) return 0
-	const stackmates = all.filter((q) => q.team === p.team && !q.isHome && q.station === p.station)
-	stackmates.sort((a, b) => a.pieceId.localeCompare(b.pieceId))
-	return stackmates.findIndex((q) => q.pieceId === p.pieceId)
+      {state.phase === 'ended' && (
+        <EndOverlay
+          winner={state.winner as Team}
+          homeA={homeA}
+          homeB={homeB}
+          canRematch={myPlayer.sessionId === state.hostSessionId}
+          onRematch={game.rematch}
+        />
+      )}
+    </div>
+  )
 }
 
 function stateToGame(s: YutState): GameState {
-	const pieces: Record<string, Piece> = {}
-	s.pieces.forEach((p, key) => {
-		pieces[key] = { team: p.team as Team, id: p.pieceId, path: Array.from(p.path) }
-	})
-	return {
-		pieces,
-		currentTeam: s.currentTeam as Team,
-		pendingStep: s.pendingStep === 0 ? null : s.pendingStep,
-		bonusOwed: s.bonusOwed,
-		winner: (s.winner || null) as Team | null
-	}
+  const pieces: Record<string, Piece> = {}
+  s.pieces.forEach((p, key) => {
+    pieces[key] = { team: p.team as Team, id: p.pieceId, path: Array.from(p.path) }
+  })
+  return {
+    pieces,
+    currentTeam: s.currentTeam as Team,
+    pendingStep: s.pendingStep === 0 ? null : s.pendingStep,
+    bonusOwed: s.bonusOwed,
+    winner: (s.winner || null) as Team | null
+  }
 }
