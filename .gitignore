@@ -32,3 +32,9 @@ yarn-error.log*
 
 # brainstorming session files (visual companion)
 .superpowers/
+
+# IDE config
+.idea/
+
+# build output
+dist/
