@@ -5,7 +5,7 @@
 @media (prefers-reduced-motion: reduce) {
   .mascot--bob,
   .gold-button--pulse,
-  .player-panel__halo {
+  .name-plate--active {
     animation: none !important;
   }
   .stick { animation: none; }

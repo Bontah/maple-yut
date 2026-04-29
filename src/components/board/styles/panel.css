@@ -273,16 +273,12 @@
 .your-turn-caption--waiting { color: var(--wood-light); }
 
 /* Gold halo around the active player's name plate.
-   Rounded-rectangle shape so it hugs the plate instead of stretching into a
-   wide ellipse (which 50% radius would do on a wider-than-tall element). */
-@keyframes halo-pulse {
+   Applied as a box-shadow directly on the .name-plate so the glow follows
+   the plate's actual bounds (not the wider parent wrapper). */
+@keyframes name-plate-glow {
   0%, 100% { box-shadow: 0 0 14px 1px rgba(244, 200, 58, 0.4); }
   50%      { box-shadow: 0 0 18px 3px rgba(244, 200, 58, 0.8); }
 }
-.player-panel__halo {
-  position: absolute;
-  inset: -4px;
-  border-radius: 9px;
-  pointer-events: none;
-  animation: halo-pulse 2.4s ease-in-out infinite;
+.name-plate--active {
+  animation: name-plate-glow 2.4s ease-in-out infinite;
 }

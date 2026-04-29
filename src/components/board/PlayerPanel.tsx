@@ -54,9 +54,8 @@ export function PlayerPanel({
         <Mascot team={team} size="hero" bob={isActive} glow={isActive} />
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'center', position: 'relative' }}>
-        {showHalo && <span className="player-panel__halo" />}
-        <div className="name-plate">
+      <div style={{ display: 'flex', justifyContent: 'center' }}>
+        <div className={`name-plate${showHalo ? ' name-plate--active' : ''}`}>
           {player?.avatarUri ? (
             <img
               className="name-plate__avatar"
