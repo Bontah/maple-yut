@@ -1,0 +1,47 @@
+/* WoodFrame and player-panel styling */
+
+.wood-frame {
+  position: relative;
+  background: linear-gradient(180deg, var(--wood-mid), var(--wood-dark));
+  border: 3px solid var(--frame);
+  border-radius: 10px;
+  padding: 14px;
+  color: var(--paper);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.wood-frame::before {
+  /* Wood-grain noise overlay */
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background-image: var(--wood-noise);
+  opacity: 0.18;
+  pointer-events: none;
+}
+
+.wood-frame__bracket {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  pointer-events: none;
+}
+
+.wood-frame__bracket--tl { top: 4px; left: 4px;
+  border-top: 3px solid var(--gold); border-left: 3px solid var(--gold); }
+.wood-frame__bracket--tr { top: 4px; right: 4px;
+  border-top: 3px solid var(--gold); border-right: 3px solid var(--gold); }
+.wood-frame__bracket--bl { bottom: 4px; left: 4px;
+  border-bottom: 3px solid var(--gold); border-left: 3px solid var(--gold); }
+.wood-frame__bracket--br { bottom: 4px; right: 4px;
+  border-bottom: 3px solid var(--gold); border-right: 3px solid var(--gold); }
+
+/* Inactive variant — dimmed brackets, slightly reduced opacity */
+.wood-frame--inactive { opacity: 0.92; }
+.wood-frame--inactive .wood-frame__bracket--tl,
+.wood-frame--inactive .wood-frame__bracket--tr,
+.wood-frame--inactive .wood-frame__bracket--bl,
+.wood-frame--inactive .wood-frame__bracket--br {
+  border-color: var(--wood-rim);
+}
