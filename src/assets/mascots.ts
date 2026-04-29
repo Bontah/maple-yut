@@ -16,6 +16,6 @@ export const MASCOT_BY_TEAM: Record<Team, string> = {
 }
 
 export const MASCOT_NAME_BY_TEAM: Record<Team, string> = {
-  A: 'Slime',
+  A: 'Mushroom',
   B: 'Snail'
 }
