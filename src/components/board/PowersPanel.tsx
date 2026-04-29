@@ -30,8 +30,8 @@ export function PowersPanel({ state, myTeam, powersRemaining, onYut, onHorses }:
   if (!myTeam) return null
   if (state.mode !== 'maple') return null
 
-  const yutEnabled = canUseControlYut(state, powersRemaining)
-  const horsesEnabled = canUseControlHorses(state, powersRemaining)
+  const yutEnabled = canUseControlYut(state, myTeam, powersRemaining)
+  const horsesEnabled = canUseControlHorses(state, myTeam, powersRemaining)
 
   const charges: ('available' | 'spent')[] = []
   for (let i = 0; i < 2; i++) {
