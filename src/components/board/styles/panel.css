@@ -158,3 +158,58 @@
   margin: 8px 0 6px;
   text-align: center;
 }
+
+/* Powers panel */
+.powers-row {
+  font-size: 10px;
+  color: var(--frame);
+  letter-spacing: 1.5px;
+  font-family: var(--font-body);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 8px 0 6px;
+}
+.powers-charges { display: inline-flex; gap: 3px; }
+.powers-charge {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--gold);
+  box-shadow: 0 0 4px var(--gold);
+}
+.powers-charge--spent {
+  background: var(--wood-dark);
+  box-shadow: none;
+  border: 1px solid var(--wood-rim);
+}
+
+.ability-row { display: flex; gap: 6px; }
+.ability {
+  flex: 1;
+  padding: 8px 6px;
+  background: linear-gradient(180deg, var(--wood-light), var(--wood-rim));
+  border: 2px solid var(--frame);
+  border-radius: 6px;
+  font-size: 11px;
+  color: var(--paper);
+  text-align: center;
+  font-family: var(--font-display);
+  box-shadow: 0 2px 0 var(--wood-dark);
+  cursor: pointer;
+}
+.ability:disabled { opacity: 0.45; box-shadow: none; cursor: default; }
+.ability__icon { display: block; margin-bottom: 2px; color: var(--gold); font-size: 14px; }
+
+.ability-picker {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 6px;
+}
+.ability-picker button {
+  padding: 0.3em 0.7em;
+  font-size: 0.9em;
+  font-family: var(--font-display);
+}
