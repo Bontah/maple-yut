@@ -58,3 +58,59 @@
 
 .ghost { transition: opacity 0.15s; cursor: pointer; }
 .ghost:hover { opacity: 0.6; }
+
+.end-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(58, 42, 26, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+.end-overlay__plaque {
+  background: linear-gradient(180deg, var(--wood-mid), var(--wood-dark));
+  border: 3px solid var(--frame);
+  border-radius: 12px;
+  padding: 28px 36px;
+  text-align: center;
+  color: var(--paper);
+  position: relative;
+  font-family: var(--font-display);
+  max-width: 90vw;
+}
+.end-overlay__title {
+  font-size: 36px;
+  color: var(--gold);
+  letter-spacing: 2px;
+  margin: 0 0 12px;
+  text-transform: uppercase;
+}
+.end-overlay__score {
+  font-family: var(--font-body);
+  font-size: 14px;
+  margin: 12px 0;
+  opacity: 0.85;
+}
+.end-overlay .mascot-stage { height: 220px; }
+.end-overlay .mascot[data-size='hero'] { height: 200px; }
+
+/* Confetti */
+.confetti {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.confetti span {
+  position: absolute;
+  top: -10px;
+  width: 8px;
+  height: 14px;
+  border-radius: 2px;
+  animation: confetti-fall 3s linear forwards;
+}
+@keyframes confetti-fall {
+  0%   { transform: translate3d(0, -10px, 0) rotate(0); opacity: 1; }
+  100% { transform: translate3d(20px, 110vh, 0) rotate(720deg); opacity: 0; }
+}
