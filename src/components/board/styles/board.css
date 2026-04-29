@@ -124,8 +124,16 @@
 
 @media (min-width: 901px) {
   .board-screen__grid {
-    grid-template-columns: 1fr 1.5fr 1fr;
+    /* Side panels: bounded between 240–320px so they stay visually consistent and
+       don't grow into the board on wide viewports. Middle: minmax(0, 1fr) so the
+       board fills remaining space without being pushed by panel min-content. */
+    grid-template-columns: minmax(240px, 320px) minmax(0, 1fr) minmax(240px, 320px);
     align-items: start;
+    justify-content: center;
+  }
+  .board-screen__opponent,
+  .board-screen__self {
+    min-width: 0;
   }
 }
 @media (max-width: 900px) {

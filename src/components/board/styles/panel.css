@@ -47,7 +47,7 @@
 }
 
 /* Mascot — sized via the size prop (data-size attribute). */
-.mascot { object-fit: contain; display: block; }
+.mascot { object-fit: contain; display: block; max-width: 100%; }
 .mascot[data-size='hero']  { height: 130px; }
 .mascot[data-size='token'] { height: 100%; width: 100%; }
 .mascot[data-size='piece'] { height: 100%; width: 100%; }
