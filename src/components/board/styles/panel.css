@@ -86,3 +86,75 @@
   background: radial-gradient(ellipse at center 75%, var(--mascot-spot, rgba(244, 200, 58, 0.25)), transparent 70%);
   pointer-events: none;
 }
+
+/* Pieces strip */
+.pieces-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 5px;
+  width: 100%;
+}
+
+.piece-slot {
+  aspect-ratio: 1 / 1;
+  border: 2px solid var(--frame);
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--wood-dark);
+  position: relative;
+}
+.piece-slot--start {
+  background: var(--wood-darkest);
+  border: 2px dashed var(--wood-rim);
+  opacity: 0.55;
+}
+.piece-slot--home {
+  background: var(--gold);
+  border-color: var(--wood-rim);
+  box-shadow: inset 0 0 6px rgba(244, 200, 58, 0.6);
+}
+.piece-slot__inner {
+  width: 78%;
+  height: 78%;
+}
+.piece-slot__badge-station {
+  position: absolute;
+  bottom: -3px;
+  right: -3px;
+  background: var(--frame);
+  color: var(--wood-dark);
+  font-family: var(--font-body);
+  font-size: 8px;
+  font-weight: 800;
+  border-radius: 3px;
+  padding: 1px 3px;
+  border: 1px solid var(--wood-rim);
+}
+.piece-slot__badge-home {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  background: var(--gold);
+  color: var(--wood-dark);
+  font-family: var(--font-body);
+  font-size: 8px;
+  font-weight: 800;
+  border-radius: 50%;
+  width: 14px;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--wood-rim);
+}
+
+.pieces-strip__label {
+  font-size: 10px;
+  color: var(--frame);
+  letter-spacing: 1.5px;
+  font-family: var(--font-body);
+  margin: 8px 0 6px;
+  text-align: center;
+}
