@@ -1,0 +1,51 @@
+/* src/app/theme.css
+   Design tokens for the Yut Wars Maple-inspired theme.
+   Every component references variables from this file — change a token here,
+   it propagates everywhere. */
+
+:root {
+  /* Wood / surface palette */
+  --wood-darkest: #2a1a0a;
+  --wood-dark:    #3a2a1a;
+  --wood-mid:     #5a3820;
+  --wood-rim:     #6b4520;
+  --wood-light:   #8a5e34;
+  --frame:        #c9a36b;
+  --board:        #d4b888;
+  --paper:        #f4e4c4;
+  --paper-light:  #fff7e0;
+  --gold:         #f4c83a;
+
+  /* Team identity */
+  --team-a: #d65454;
+  --team-b: #4a76d6;
+
+  /* Typography */
+  --font-display: 'Jua', system-ui, sans-serif;
+  --font-body:    Inter, system-ui, sans-serif;
+
+  /* Wood-grain noise overlay (encoded SVG turbulence filter) */
+  --wood-noise: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.2  0 0 0 0 0.1  0 0 0 0 0  0 0 0 0.7 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+
+/* Page-level baseline (overrides the dark default in global.css) */
+html, body, #root {
+  background: linear-gradient(180deg, var(--wood-darkest), var(--wood-dark));
+  color: var(--paper);
+  font-family: var(--font-body);
+}
+
+/* Override the React-template's flex-centered body and centered max-width on
+   #root so the Discord activity iframe uses the full viewport. */
+body {
+  display: block;
+  place-items: initial;
+}
+#root {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+  width: 100%;
+  min-height: 100vh;
+}
