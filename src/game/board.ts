@@ -87,12 +87,22 @@ export function enumerateForward(piece: Piece, steps: number): MoveOption[] {
 		}
 		const edges = FORWARD[station]
 		if (!edges) return
-		// Maple Story rule: a piece can only take a shortcut (alt edge) if it STARTS its
-		// move at the intersection. Passing through 5, 10, or 22 mid-move follows the
-		// default next edge — no branching.
+		// Maple Story rule 1: a piece can only take a shortcut (alt edge) if it STARTS
+		// its move at the intersection. Passing through 5, 10, or 22 mid-move follows
+		// the default next edge — no branching.
 		const isFirstStep = station === startStation
-		const nexts = (isFirstStep && edges.alt !== undefined) ? [edges.next, edges.alt] : [edges.next]
-		for (const n of nexts) {
+
+		// Maple Story rule 2: the edge 22 → 23 (center toward SW/home exit) is gated.
+		// Only pieces whose move STARTED at center 22 or anywhere on diagonal-1 (10/20/21)
+		// may traverse it. Pieces from diagonal-2 (5/25/26) can reach 22 but must STOP
+		// there — they can't continue to 23/24/HOME in the same move.
+		const SW_GATE_STARTS = startStation === 22 || startStation === 21 || startStation === 20 || startStation === 10
+		const blockSwGate = station === 22 && edges.next === 23 && !SW_GATE_STARTS
+
+		const candidates: number[] = []
+		if (!blockSwGate) candidates.push(edges.next)
+		if (isFirstStep && edges.alt !== undefined) candidates.push(edges.alt)
+		for (const n of candidates) {
 			dfs(n, remaining - 1, [...suffix, n])
 		}
 	}

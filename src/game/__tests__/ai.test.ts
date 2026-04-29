@@ -104,7 +104,11 @@ describe('AI smoke matches', () => {
 	// captures) would fail the test.
 	const N = 200
 
-	it('hard vs easy: hard wins ≥ 65% over 200 matches', () => {
+	it('hard vs easy: hard wins ≥ 59% over 200 matches', () => {
+		// Threshold lowered from 0.65 → 0.59 after the Maple Story SW-gate rule change:
+		// diagonal-2 entrants (from station 5/25/26) can no longer traverse 22→23 in one
+		// move, which slightly reduces the AI's strategic advantage. The new deterministic
+		// equilibrium with seed 0xA1 is 0.64; 0.59 keeps a healthy 5-point margin.
 		const rng = createRandom(0xA1)
 		let wins = 0
 		for (let i = 0; i < N; i++) {
@@ -112,7 +116,7 @@ describe('AI smoke matches', () => {
 			const { stats } = playMatch(onA ? hardPolicy : easyPolicy, onA ? easyPolicy : hardPolicy, rng)
 			if ((stats.winner === 'A') === onA) wins++
 		}
-		expect(wins / N).toBeGreaterThanOrEqual(0.65)
+		expect(wins / N).toBeGreaterThanOrEqual(0.59)
 	}, 60_000)
 
 	it('medium vs easy: medium wins ≥ 65% over 200 matches', () => {
@@ -126,10 +130,11 @@ describe('AI smoke matches', () => {
 		expect(wins / N).toBeGreaterThanOrEqual(0.65)
 	}, 60_000)
 
-	it('hard vs random: hard wins ≥ 75% (validates leaf eval is strong vs no strategy)', () => {
-		// Threshold lowered from 0.80 → 0.75 after the Maple Story shortcut rule change:
-		// pieces can no longer branch at intersections mid-move, reducing the AI's search-space
-		// advantage slightly. 0.79 is the new deterministic result; 0.75 keeps a healthy margin.
+	it('hard vs random: hard wins ≥ 69% (validates leaf eval is strong vs no strategy)', () => {
+		// Threshold lowered from 0.75 → 0.69 after the Maple Story SW-gate rule change:
+		// diagonal-2 entrants (from station 5/25/26) can no longer traverse 22→23 in one
+		// move, further constraining piece paths and reducing search-space advantage.
+		// 0.74 is the new deterministic result with seed 0xA3; 0.69 keeps a healthy 5-point margin.
 		const rng = createRandom(0xA3)
 		let wins = 0
 		for (let i = 0; i < N; i++) {
@@ -141,7 +146,7 @@ describe('AI smoke matches', () => {
 			)
 			if ((stats.winner === 'A') === onA) wins++
 		}
-		expect(wins / N).toBeGreaterThanOrEqual(0.75)
+		expect(wins / N).toBeGreaterThanOrEqual(0.69)
 	}, 60_000)
 })
 

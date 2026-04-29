@@ -81,6 +81,65 @@ describe('enumerateForward', () => {
 		expect(opts[0].endStation).toBe(23)
 		expect(opts[0].endPath).toEqual([21, 22, 23])
 	})
+
+	it('piece at corner 5 with step 4: diagonal is blocked (would cross 22→23 from a forbidden start), only perimeter offered', () => {
+		const opts = enumerateForward(piece([5]), 4)
+		expect(opts).toHaveLength(1)
+		expect(opts[0].endStation).toBe(9)
+		expect(opts[0].endPath).toEqual([5, 6, 7, 8, 9])
+	})
+
+	it('piece at corner 5 with step 5: same — diagonal blocked, only perimeter to corner 10', () => {
+		const opts = enumerateForward(piece([5]), 5)
+		expect(opts).toHaveLength(1)
+		expect(opts[0].endStation).toBe(10)
+		expect(opts[0].endPath).toEqual([5, 6, 7, 8, 9, 10])
+	})
+
+	it('piece at 26 (mid-diagonal-2) with step 1 lands at 22', () => {
+		const opts = enumerateForward(piece([5, 25, 26]), 1)
+		expect(opts).toHaveLength(1)
+		expect(opts[0].endStation).toBe(22)
+	})
+
+	it('piece at 26 with step 2 has NO legal move (would traverse 22→23 from a forbidden start)', () => {
+		const opts = enumerateForward(piece([5, 25, 26]), 2)
+		expect(opts).toHaveLength(0)
+	})
+
+	it('piece at 25 with step 2 lands at 22', () => {
+		const opts = enumerateForward(piece([5, 25]), 2)
+		expect(opts).toHaveLength(1)
+		expect(opts[0].endStation).toBe(22)
+	})
+
+	it('piece at 25 with step 3 has NO legal move (would traverse 22→23 from a forbidden start)', () => {
+		const opts = enumerateForward(piece([5, 25]), 3)
+		expect(opts).toHaveLength(0)
+	})
+
+	it('piece at 21 (diagonal-1) with step 2 reaches 23 — the gate is open from diagonal-1 starts', () => {
+		const opts = enumerateForward(piece([10, 20, 21]), 2)
+		expect(opts).toHaveLength(1)
+		expect(opts[0].endStation).toBe(23)
+		expect(opts[0].endPath).toEqual([10, 20, 21, 22, 23])
+	})
+
+	it('piece at corner 10 with step 4 (via diagonal-1) reaches 23', () => {
+		const opts = enumerateForward(piece([10]), 4)
+		// Two paths: perimeter to 14, or diagonal-1 through 22 to 23.
+		const ends = new Set(opts.map((o) => o.endStation))
+		expect(ends.has(14)).toBe(true)
+		expect(ends.has(23)).toBe(true)
+	})
+
+	it('piece at center 22 with step 3 can reach HOME (via 23/24) or 15 (via 27/28) — gate is open from 22', () => {
+		const opts = enumerateForward(piece([22]), 3)
+		const ends = new Set(opts.map((o) => o.endStation))
+		// Both 0/HOME (via 23→24→HOME) and 15 (via 27→28→15) should be present.
+		expect(ends.has(HOME)).toBe(true)
+		expect(ends.has(15)).toBe(true)
+	})
 })
 
 describe('applyBack and canAcceptBack', () => {
