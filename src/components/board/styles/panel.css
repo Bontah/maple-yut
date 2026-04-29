@@ -45,3 +45,44 @@
 .wood-frame--inactive .wood-frame__bracket--br {
   border-color: var(--wood-rim);
 }
+
+/* Mascot — sized via the size prop (data-size attribute). */
+.mascot { object-fit: contain; display: block; }
+.mascot[data-size='hero']  { height: 130px; }
+.mascot[data-size='token'] { height: 100%; width: 100%; }
+.mascot[data-size='piece'] { height: 100%; width: 100%; }
+
+.mascot--shadow {
+  filter: drop-shadow(0 6px 6px rgba(0, 0, 0, 0.5));
+}
+
+.mascot--glow {
+  filter: drop-shadow(0 6px 6px rgba(0, 0, 0, 0.5))
+          drop-shadow(0 0 12px var(--gold));
+}
+
+@keyframes mascot-bob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-6px); }
+}
+.mascot--bob {
+  animation: mascot-bob 2.4s ease-in-out infinite;
+}
+
+/* Mascot stage (panel-hero positioning + radial spotlight) */
+.mascot-stage {
+  position: relative;
+  height: 140px;
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+.mascot-stage::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center 75%, var(--mascot-spot, rgba(244, 200, 58, 0.25)), transparent 70%);
+  pointer-events: none;
+}
