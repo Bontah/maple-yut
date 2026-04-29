@@ -10,12 +10,31 @@ import { chromium, type ConsoleMessage, type Page } from 'playwright'
 
 const URL = process.env.YUT_URL ?? 'http://localhost:3000'
 
+const SHOTS_DIR = 'D:/Projects/yut/.test-shots'
+const VIEWPORTS = [
+  { name: 'desktop', width: 1280, height: 720 },
+  { name: 'tablet',  width: 720,  height: 900 },
+  { name: 'mobile',  width: 360,  height: 640 }
+]
+
 function tagLog(tag: string) {
 	return (msg: ConsoleMessage) => {
 		const t = msg.type()
 		if (t === 'debug' || t === 'info') return
 		console.log(`[${tag} ${t}] ${msg.text()}`)
 	}
+}
+
+async function captureViewports(page: Page, label: string) {
+  for (const vp of VIEWPORTS) {
+    await page.setViewportSize({ width: vp.width, height: vp.height })
+    await page.waitForTimeout(120)
+    const path = `${SHOTS_DIR}/redesign-${label}-${vp.name}.png`
+    await page.screenshot({ path, fullPage: false }).catch((e) => {
+      console.log(`screenshot failed for ${label}/${vp.name}: ${(e as Error).message}`)
+    })
+    console.log(`captured ${path}`)
+  }
 }
 
 async function dumpDom(page: Page, label: string) {
@@ -65,6 +84,7 @@ async function main() {
 		process.exit(2)
 	}
 	console.log('✅ Lobby visible on tab A')
+	await captureViewports(pageA, 'lobby-empty')
 
 	const lobbyVisibleB = await pageB.locator('.lobby').isVisible().catch(() => false)
 	console.log(`Lobby visible on tab B: ${lobbyVisibleB}`)
@@ -73,10 +93,12 @@ async function main() {
 	console.log('--- Tab A joins Team A ---')
 	await pageA.locator('.lobby__seat', { hasText: 'Team A' }).getByRole('button', { name: 'Join' }).click()
 	await pageA.waitForTimeout(500)
+	await captureViewports(pageA, 'lobby-one-seat')
 
 	console.log('--- Tab B joins Team B ---')
 	await pageB.locator('.lobby__seat', { hasText: 'Team B' }).getByRole('button', { name: 'Join' }).click()
 	await pageB.waitForTimeout(500)
+	await captureViewports(pageA, 'lobby-both-seats')
 
 	// Tab A is host (first joiner) → click Start Match.
 	console.log('--- Tab A starts the match ---')
@@ -92,6 +114,7 @@ async function main() {
 		await browser.close()
 		process.exit(3)
 	}
+	await captureViewports(pageA, 'board-await-throw')
 
 	// Drive the match by repeatedly:
 	//   - On the active player's tab, click "Throw sticks" if enabled.
@@ -100,6 +123,7 @@ async function main() {
 	const MAX_ROUNDS = 30
 	let actionsTaken = 0
 	let stuckRounds = 0
+	let capturedSpend = false
 	for (let i = 0; i < MAX_ROUNDS; i++) {
 		if (i % 5 === 0) {
 			const aBanner = await pageA.locator('.board-header__banner').textContent().catch(() => '?')
@@ -116,6 +140,7 @@ async function main() {
 			console.log('✅ Match ended.')
 			const winnerText = await pageA.locator('.board-end__inner h2').textContent()
 			console.log(`Winner banner: ${winnerText}`)
+			await captureViewports(pageA, 'board-end-overlay')
 			break
 		}
 
@@ -162,6 +187,10 @@ async function main() {
 				await ghosts.first().click({ force: true })
 				actionsTaken++
 				await active.waitForTimeout(150)
+				if (!capturedSpend) {
+					await captureViewports(active, 'board-await-spend')
+					capturedSpend = true
+				}
 			} else {
 				// Back-do path: clicking the piece directly resolves the move.
 				actionsTaken++
