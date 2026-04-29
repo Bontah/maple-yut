@@ -51,13 +51,16 @@ export function PlayerPanel({
 
       <div style={{ display: 'flex', justifyContent: 'center', position: 'relative' }}>
         {showHalo && <span className="player-panel__halo" />}
-        <div className="name-plate" style={{ ['--team' as string]: teamColor } as React.CSSProperties}>
-          <img
-            className="name-plate__avatar"
-            src={player?.avatarUri || ''}
-            alt={player?.name || team}
-            style={{ ['--team' as string]: teamColor } as React.CSSProperties}
-          />
+        <div className="name-plate">
+          {player?.avatarUri ? (
+            <img
+              className="name-plate__avatar"
+              src={player.avatarUri}
+              alt={player.name || team}
+            />
+          ) : (
+            <span className="name-plate__avatar" aria-hidden="true" />
+          )}
           <span>{player?.name ?? `Team ${team}`}{isViewerOwnPanel ? ' (you)' : ''}</span>
         </div>
       </div>
