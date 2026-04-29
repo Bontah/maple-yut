@@ -213,3 +213,50 @@
   font-size: 0.9em;
   font-family: var(--font-display);
 }
+
+.name-plate {
+  background: var(--paper);
+  color: var(--wood-dark);
+  font-size: 13px;
+  font-weight: 700;
+  padding: 4px 12px 4px 4px;
+  border-radius: 5px;
+  border: 1px solid var(--wood-rim);
+  border-bottom: 3px solid var(--team, var(--team-a));
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+}
+.name-plate__avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid var(--team, var(--team-a));
+  flex-shrink: 0;
+  background: var(--wood-rim);
+}
+
+.your-turn-caption {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  font-family: var(--font-body);
+  text-align: center;
+  margin: 4px 0 0;
+}
+.your-turn-caption--active  { color: var(--gold); }
+.your-turn-caption--waiting { color: var(--wood-light); }
+
+/* Avatar gold halo for active player */
+@keyframes halo-pulse {
+  0%, 100% { box-shadow: 0 0 18px 2px rgba(244, 200, 58, 0.4); }
+  50%      { box-shadow: 0 0 22px 4px rgba(244, 200, 58, 0.85); }
+}
+.player-panel__halo {
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: halo-pulse 2.4s ease-in-out infinite;
+}
