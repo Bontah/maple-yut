@@ -67,8 +67,8 @@ export function Board() {
   }
 
   // Determine which panel is "yours". Spectators (myTeam = '') default to A on left, B on right.
-  const opponentTeam: Team = myTeam === 'A' ? 'B' : 'A'
-  const selfTeam: Team = myTeam === '' ? 'A' : myTeam
+  const selfTeam: Team = myTeam === 'A' ? 'A' : 'B'      // your team, or default to B for spectators
+  const opponentTeam: Team = selfTeam === 'A' ? 'B' : 'A' // the other side
   const opponentPlayer = players.find((p) => p.team === opponentTeam)
   const selfPlayer     = players.find((p) => p.team === selfTeam)
   const piecesArr = Array.from(pieces)
