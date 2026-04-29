@@ -1,0 +1,14 @@
+/* Disable non-essential animations when the user prefers reduced motion.
+   Functional transitions (e.g., piece movement to a new position) keep
+   working — but the bobbing, pulsing, and pulse-glow stop. */
+
+@media (prefers-reduced-motion: reduce) {
+  .mascot--bob,
+  .gold-button--pulse,
+  .player-panel__halo {
+    animation: none !important;
+  }
+  .stick { animation: none; }
+  .confetti span { display: none; }
+  .sticks-tray__dust { display: none; }
+}

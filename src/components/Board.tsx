@@ -18,6 +18,7 @@ import { useYutGame } from '../hooks/useYutGame.js'
 import './board/styles/board.css'
 import './board/styles/panel.css'
 import './board/styles/sticks.css'
+import './board/styles/animations.css'
 
 export function Board() {
   const game = useYutGame()
